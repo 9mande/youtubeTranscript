@@ -20,10 +20,7 @@ def get_transcript():
             {'start': int(item['start']), 'text': item['text']}
             for item in transcript
         ]
-        return app.response_class(
-            response=json.dumps(modified_transcript, ensure_ascii=False),
-            mimetype='application/json'
-        )
+        return jsonify(modified_transcript)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
