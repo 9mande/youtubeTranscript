@@ -15,17 +15,9 @@ def progress_hook(d) -> None:
     pass
 
 
-def download_info(url):
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "concurrent_fragment_downloads": 10,
-        "retry_sleep_functions": {"fragment": lambda n: n + 1},
-        "progress_hooks": [progress_hook],
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url=url, download=False)
-        return info
+def download_info(url, ydl):
+    info = ydl.extract_info(url=url, download=False)
+    return info
 
 
 # def generate_transcript_list(audio_path) -> list[dict]:
@@ -51,8 +43,7 @@ def download_info(url):
 #     return transcript_list
 
 
-def fetch_transcript(transcript_url):
-    ydl = yt_dlp.YoutubeDL()
+def fetch_transcript(transcript_url, ydl):
     response = ydl.urlopen(transcript_url).read().decode("utf-8")
     return response
 
@@ -100,21 +91,9 @@ def parse_transcript(transcript, ext):
         return transcript
 
 
-@app.route("/test", methods=["GET"])
-def test():
-    video = "https://www.youtube.com/watch?v=x7X9w_GIm1s"
-    info = download_info(video)
-    transcript_info = info["automatic_captions"]["ko"]
-    transcript_urls = {item["ext"]: item["url"] for item in transcript_info}
-    transcript_url = transcript_urls["srv1"]
-    transcript = fetch_transcript(transcript_url)
-    transcript = parse_transcript(transcript, "srv1")
-    return jsonify({"transcript": transcript})
-
-
 @app.route("/get_transcript", methods=["GET"])
 def get_transcript():
-    url = request.args.get("url")
+    url = request.args.get("url", ydl)
 
     if not url:
         return jsonify({"error": "Missing url parameter"}), 400
@@ -130,9 +109,17 @@ def get_transcript():
                 transcript_url = transcript_urls[ext]
                 break
 
-        transcript = fetch_transcript(transcript_url)
-        transcript = parse_transcript(transcript, ext)
-        return jsonify({"transcript": transcript})
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "concurrent_fragment_downloads": 10,
+            "retry_sleep_functions": {"fragment": lambda n: n + 1},
+            "progress_hooks": [progress_hook],
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            transcript = fetch_transcript(transcript_url, ydl)
+            transcript = parse_transcript(transcript, ext)
+            return jsonify({"transcript": transcript})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
