@@ -55,7 +55,11 @@ def get_transcript():
         transcript = YouTubeTranscriptApi.get_transcript(
             video_id, languages=["ko", "en"]
         )
-        return jsonify(transcript)
+        modified_transcript = [
+            {'start': int(item['start']), 'text': item['text']}
+            for item in transcript
+        ]
+        return jsonify(modified_transcript)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
