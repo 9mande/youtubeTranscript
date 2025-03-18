@@ -6,9 +6,16 @@ import yt_dlp
 app = Flask(__name__)
 
 
+def progress_hook(d) -> None:
+    print(d)
+
+
 def download_audio(url):
     ydl_opts = {
         "format": "bestaudio/best",
+        "concurrent_fragment_downloads": 10,
+        "retry_sleep_functions": {"fragment": lambda n: n + 1},
+        "progress_hooks": [progress_hook],
         "outtmpl": "./audio.mp4",
     }
 
