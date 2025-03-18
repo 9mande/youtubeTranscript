@@ -17,7 +17,9 @@ def download_audio(url):
 
 
 def generate_transcript_list(audio_path) -> list[dict]:
-    model = whisper.load_model("small")  # 모델 크기 선택 가능: "tiny", "small", "medium", "large"
+    model = whisper.load_model(
+        "small"
+    )  # 모델 크기 선택 가능: "tiny", "small", "medium", "large"
     result = model.transcribe(audio_path, fp16=False)  # CPU에서 실행 시 FP16 비활성화
 
     transcript_list = []
@@ -28,15 +30,17 @@ def generate_transcript_list(audio_path) -> list[dict]:
 
         # 타임스탬프 (hh:mm:ss 형식)
         start_time = f"{int(start // 3600):02}:{int((start % 3600) // 60):02}:{int(start % 60):02}"
-        end_time = f"{int(end // 3600):02}:{int((end % 3600) // 60):02}:{int(end % 60):02}"
+        end_time = (
+            f"{int(end // 3600):02}:{int((end % 3600) // 60):02}:{int(end % 60):02}"
+        )
         time_range = f"{start_time} - {end_time}"
         transcript_list.append({"time": time_range, "text": text})
 
     return transcript_list
 
 
-@app.route("/")
-def index():
+@app.route("/test", methods=["GET"])
+def test():
     video = "https://www.youtube.com/watch?v=x7X9w_GIm1s"
     download_audio(video)
 
@@ -50,16 +54,10 @@ def get_transcript():
 
     if not video_id:
         return jsonify({"error": "Missing video_id parameter"}), 400
-
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(
-            video_id, languages=["ko", "en"]
-        )
-        modified_transcript = [
-            {'start': int(item['start']), 'text': item['text']}
-            for item in transcript
-        ]
-        return jsonify(modified_transcript)
+        download_audio(video_id)
+        transcript = generate_transcript_list("./audio.mp4")
+        return jsonify({"transcript": transcript})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
