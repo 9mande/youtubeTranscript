@@ -93,30 +93,28 @@ def parse_transcript(transcript, ext):
 
 @app.route("/get_transcript", methods=["GET"])
 def get_transcript():
-    url = request.args.get("url", ydl)
+    url = request.args.get("url")
 
     if not url:
         return jsonify({"error": "Missing url parameter"}), 400
     try:
-        info = download_info(url)
-        transcript_info = info["automatic_captions"]["ko"]
-        transcript_urls = {item["ext"]: item["url"] for item in transcript_info}
-
-        priority = ["srv1", "srv2"]  # will be added
-        parsing_function = None
-        for ext in priority:
-            if ext in transcript_urls:
-                transcript_url = transcript_urls[ext]
-                break
-
         ydl_opts = {
             "format": "bestaudio/best",
             "concurrent_fragment_downloads": 10,
             "retry_sleep_functions": {"fragment": lambda n: n + 1},
             "progress_hooks": [progress_hook],
         }
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = download_info(url, ydl)
+            transcript_info = info["automatic_captions"]["ko"]
+            transcript_urls = {item["ext"]: item["url"] for item in transcript_info}
+
+            priority = ["srv1", "srv2"]  # will be added
+            for ext in priority:
+                if ext in transcript_urls:
+                    transcript_url = transcript_urls[ext]
+                    break
+
             transcript = fetch_transcript(transcript_url, ydl)
             transcript = parse_transcript(transcript, ext)
             return jsonify({"transcript": transcript})
