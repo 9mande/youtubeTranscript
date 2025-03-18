@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
+
 # from youtube_transcript_api import YouTubeTranscriptApi
 # import whisper
 import yt_dlp
@@ -51,8 +52,9 @@ def download_info(url):
 
 
 def fetch_transcript(transcript_url):
-    response = requests.get(transcript_url)
-    return response.text
+    ydl = yt_dlp.YoutubeDL()
+    response = ydl.urlopen(transcript_url).read().decode("utf-8")
+    return response
 
 
 def parse_srv1(xml_string):
